@@ -9,7 +9,7 @@ An AI-powered mock interview system that provides adaptive questioning and detai
 - **Persona Detection**: System adapts to different user communication styles (Confused, Efficient, Chatty)
 - **Detailed Feedback**: Get scored on communication, technical knowledge, and structure (1-5 scale)
 - **Interview History**: Track your progress over time with session transcripts
-- **Voice Mode**: Optional speech-to-text and text-to-speech support
+- **Voice Mode**: speech-to-text and text-to-speech support
 - **Modern Web UI**: Clean, responsive interface for seamless practice
 - **Local & Private**: Runs entirely on your machine using Ollama - no external API calls
 
