@@ -3,3 +3,13 @@ uvicorn==0.24.0
 pydantic==2.5.0
 requests==2.31.0
 python-dotenv==1.0.0
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2
+
+# Speech-to-text (required for task 13.1)
+openai-whisper>=20231117
+
+# Optional text-to-speech dependencies (for task 13.2)
+# Install with: pip install TTS
+# TTS>=0.22.0

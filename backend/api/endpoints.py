@@ -33,6 +33,12 @@ from services.prompt_generator import PromptGenerator
 from services.role_loader import get_role_loader
 from storage.storage_service import StorageService
 from models.data_models import PersonaType
+from services.voice_service import (
+    VoiceService,
+    SpeechToTextError,
+    TextToSpeechError,
+    VoiceServiceError
+)
 
 
 # Initialize services
@@ -48,6 +54,16 @@ feedback_engine = FeedbackEngine(
 )
 storage_service = StorageService()
 role_loader = get_role_loader()
+
+# Initialize voice service (optional - will raise error if dependencies not installed)
+try:
+    voice_service = VoiceService(require_tts=False)  # TTS is optional
+    voice_enabled = True
+    print("✓ Voice service initialized (speech-to-text available)")
+except VoiceServiceError as e:
+    print(f"⚠ Voice service not available: {e}")
+    voice_service = None
+    voice_enabled = False
 
 # Create router
 router = APIRouter(prefix="/api", tags=["interview"])
@@ -589,3 +605,209 @@ async def get_session_transcript(session_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve session transcript: {error_msg}"
         )
+
+
+# Voice Mode Endpoints
+
+class TranscribeRequest(BaseModel):
+    """Request model for audio transcription."""
+    audio_data: str = Field(..., description="Base64-encoded audio data")
+    language: str = Field(default="en", description="Language code for transcription")
+
+
+class TranscribeResponse(BaseModel):
+    """Response model for audio transcription."""
+    transcription: str = Field(..., description="Transcribed text")
+    word_count: int = Field(..., description="Number of words in transcription")
+
+
+class SynthesizeRequest(BaseModel):
+    """Request model for speech synthesis."""
+    text: str = Field(..., description="Text to synthesize")
+    format: str = Field(default="wav", description="Audio format (wav, mp3)")
+
+
+class SynthesizeResponse(BaseModel):
+    """Response model for speech synthesis."""
+    audio_data: str = Field(..., description="Base64-encoded audio data")
+    format: str = Field(..., description="Audio format")
+
+
+@router.post("/voice/transcribe", response_model=TranscribeResponse)
+async def transcribe_audio(request: TranscribeRequest):
+    """
+    Transcribe audio to text using Whisper.
+    
+    Converts spoken audio into text that can be used as an interview answer.
+    
+    Args:
+        request: TranscribeRequest with base64-encoded audio data
+        
+    Returns:
+        TranscribeResponse with transcribed text
+        
+    Raises:
+        HTTPException 503: Voice service not available
+        HTTPException 400: Invalid audio data or language
+        HTTPException 500: Transcription failed
+    """
+    try:
+        # Check if voice service is available
+        if not voice_enabled or voice_service is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Voice mode is not available. Please install Whisper: pip install openai-whisper"
+            )
+        
+        # Validate language
+        supported_languages = voice_service.get_supported_languages()
+        if request.language not in supported_languages:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported language '{request.language}'. Supported: {', '.join(supported_languages[:10])}..."
+            )
+        
+        # Transcribe audio
+        try:
+            transcription = voice_service.transcribe_audio(
+                audio_data=request.audio_data,
+                language=request.language
+            )
+        except SpeechToTextError as e:
+            print(f"Speech-to-text error: {e}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Transcription failed: {str(e)}"
+            )
+        
+        # Validate transcription is not empty
+        if not transcription or not transcription.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No speech detected in audio. Please try again."
+            )
+        
+        word_count = len(transcription.split())
+        
+        return TranscribeResponse(
+            transcription=transcription,
+            word_count=word_count
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = str(e) if str(e) else "An unexpected error occurred"
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to transcribe audio: {error_msg}"
+        )
+
+
+@router.post("/voice/synthesize", response_model=SynthesizeResponse)
+async def synthesize_speech(request: SynthesizeRequest):
+    """
+    Synthesize speech from text using TTS.
+    
+    Converts interview questions or feedback into spoken audio.
+    
+    Args:
+        request: SynthesizeRequest with text to synthesize
+        
+    Returns:
+        SynthesizeResponse with base64-encoded audio data
+        
+    Raises:
+        HTTPException 503: Voice service not available
+        HTTPException 400: Invalid text or format
+        HTTPException 500: Synthesis failed
+    """
+    try:
+        # Check if voice service is available
+        if not voice_enabled or voice_service is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Voice mode is not available. Please install Piper TTS or Coqui TTS."
+            )
+        
+        # Validate text
+        if not request.text or not request.text.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Text cannot be empty."
+            )
+        
+        # Validate text length (max 1000 characters for TTS)
+        if len(request.text) > 1000:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Text too long (max 1000 characters for speech synthesis)."
+            )
+        
+        # Validate format
+        valid_formats = ["wav", "mp3"]
+        if request.format not in valid_formats:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid format '{request.format}'. Must be one of: {', '.join(valid_formats)}"
+            )
+        
+        # Synthesize speech
+        try:
+            audio_bytes = voice_service.synthesize_speech(
+                text=request.text,
+                output_format=request.format
+            )
+        except TextToSpeechError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Speech synthesis failed: {str(e)}"
+            )
+        
+        # Encode audio as base64
+        import base64
+        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        
+        return SynthesizeResponse(
+            audio_data=audio_base64,
+            format=request.format
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = str(e) if str(e) else "An unexpected error occurred"
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to synthesize speech: {error_msg}"
+        )
+
+
+@router.get("/voice/status")
+async def get_voice_status():
+    """
+    Check voice service availability.
+    
+    Returns information about whether voice mode is available and
+    which components are installed.
+    
+    Returns:
+        Dictionary with voice service status
+    """
+    status_info = {
+        "voice_enabled": voice_enabled,
+        "speech_to_text": False,
+        "text_to_speech": False,
+        "tts_engine": None,
+        "supported_languages": []
+    }
+    
+    if voice_enabled and voice_service:
+        status_info["speech_to_text"] = True
+        status_info["text_to_speech"] = voice_service.tts_available
+        status_info["tts_engine"] = voice_service.tts_engine if voice_service.tts_available else None
+        status_info["supported_languages"] = voice_service.get_supported_languages()
+    
+    return status_info

@@ -555,3 +555,149 @@ body {
         max-width: 90%;
     }
 }
+
+
+/* Voice Mode Styles */
+.mode-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.mode-btn:hover:not(:disabled) {
+    border-color: #667eea;
+    background: #f9f9ff;
+}
+
+.mode-btn.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.mode-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.voice-status-msg {
+    display: none;
+    margin-top: 10px;
+    padding: 10px;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #856404;
+}
+
+.voice-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    flex: 1;
+}
+
+.btn-voice {
+    padding: 20px 40px;
+    font-size: 1.1rem;
+    background: #667eea;
+    color: white;
+    border: 3px solid #667eea;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    user-select: none;
+}
+
+.btn-voice:hover {
+    background: #5568d3;
+    border-color: #5568d3;
+    transform: scale(1.05);
+}
+
+.btn-voice:active {
+    transform: scale(0.95);
+}
+
+.btn-voice.recording {
+    background: #f44336;
+    border-color: #f44336;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 15px rgba(244, 67, 54, 0);
+    }
+}
+
+.record-icon {
+    font-size: 1.5rem;
+}
+
+.recording-status {
+    display: none;
+    font-size: 0.95rem;
+    color: #666;
+    font-weight: 600;
+}
+
+.transcription-preview {
+    display: none;
+    padding: 12px 16px;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #333;
+    max-width: 100%;
+    word-wrap: break-word;
+}
+
+/* Voice Mode Chat Input Adjustments */
+.chat-input-container {
+    position: relative;
+}
+
+.chat-input-container .voice-controls {
+    margin-bottom: 10px;
+}
+
+/* Responsive Voice Controls */
+@media (max-width: 768px) {
+    .mode-selector {
+        flex-direction: column;
+    }
+    
+    .btn-voice {
+        padding: 15px 30px;
+        font-size: 1rem;
+    }
+    
+    .voice-controls {
+        padding: 15px;
+    }
+}

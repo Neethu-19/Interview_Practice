@@ -29,6 +29,18 @@
                             <option value="retail_associate">Retail Associate</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label>Interaction Mode:</label>
+                        <div class="mode-selector">
+                            <button id="chatModeBtn" class="mode-btn active" data-mode="chat">
+                                💬 Chat Mode
+                            </button>
+                            <button id="voiceModeBtn" class="mode-btn" data-mode="voice">
+                                🎤 Voice Mode
+                            </button>
+                        </div>
+                        <div id="voiceStatusMsg" class="voice-status-msg"></div>
+                    </div>
                     <button id="startBtn" class="btn btn-primary" disabled>Start Interview</button>
                     <button id="historyBtn" class="btn btn-secondary">View History</button>
                 </div>
@@ -54,6 +66,14 @@
                             placeholder="Type your answer here..."
                             rows="3"
                         ></textarea>
+                        <div class="voice-controls" id="voiceControls" style="display: none;">
+                            <button id="recordBtn" class="btn btn-voice">
+                                <span class="record-icon">🎤</span>
+                                <span class="record-text">Hold to Record</span>
+                            </button>
+                            <div id="recordingStatus" class="recording-status"></div>
+                            <div id="transcriptionPreview" class="transcription-preview"></div>
+                        </div>
                         <button id="sendBtn" class="btn btn-primary">Send</button>
                     </div>
                 </div>

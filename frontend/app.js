@@ -6,8 +6,13 @@ const state = {
     currentScreen: 'start',
     sessionId: null,
     currentRole: null,
+    currentMode: 'chat',
     questionNumber: 0,
-    isProcessing: false
+    isProcessing: false,
+    voiceEnabled: false,
+    isRecording: false,
+    mediaRecorder: null,
+    audioChunks: []
 };
 
 // DOM Elements
@@ -22,6 +27,9 @@ const elements = {
     roleSelect: document.getElementById('roleSelect'),
     startBtn: document.getElementById('startBtn'),
     historyBtn: document.getElementById('historyBtn'),
+    chatModeBtn: document.getElementById('chatModeBtn'),
+    voiceModeBtn: document.getElementById('voiceModeBtn'),
+    voiceStatusMsg: document.getElementById('voiceStatusMsg'),
     
     // Chat Screen
     roleDisplay: document.getElementById('roleDisplay'),
@@ -30,6 +38,10 @@ const elements = {
     answerInput: document.getElementById('answerInput'),
     sendBtn: document.getElementById('sendBtn'),
     endBtn: document.getElementById('endBtn'),
+    voiceControls: document.getElementById('voiceControls'),
+    recordBtn: document.getElementById('recordBtn'),
+    recordingStatus: document.getElementById('recordingStatus'),
+    transcriptionPreview: document.getElementById('transcriptionPreview'),
     
     // Feedback Screen
     commScore: document.getElementById('commScore'),
@@ -54,6 +66,7 @@ const elements = {
 // Initialize App
 function init() {
     setupEventListeners();
+    checkVoiceAvailability();
     showScreen('start');
 }
 
@@ -63,11 +76,19 @@ function setupEventListeners() {
     elements.roleSelect.addEventListener('change', handleRoleChange);
     elements.startBtn.addEventListener('click', handleStartInterview);
     elements.historyBtn.addEventListener('click', () => showHistoryScreen());
+    elements.chatModeBtn.addEventListener('click', () => handleModeChange('chat'));
+    elements.voiceModeBtn.addEventListener('click', () => handleModeChange('voice'));
     
     // Chat Screen
     elements.sendBtn.addEventListener('click', handleSendAnswer);
     elements.answerInput.addEventListener('keydown', handleInputKeydown);
     elements.endBtn.addEventListener('click', handleEndInterview);
+    
+    // Voice Controls
+    elements.recordBtn.addEventListener('mousedown', handleRecordStart);
+    elements.recordBtn.addEventListener('mouseup', handleRecordStop);
+    elements.recordBtn.addEventListener('touchstart', handleRecordStart);
+    elements.recordBtn.addEventListener('touchend', handleRecordStop);
     
     // Feedback Screen
     elements.newInterviewBtn.addEventListener('click', handleNewInterview);
@@ -166,7 +187,7 @@ async function handleStartInterview() {
     try {
         const response = await apiRequest('/start', 'POST', {
             role: role,
-            mode: 'chat'
+            mode: state.currentMode
         });
         
         state.sessionId = response.session_id;
@@ -178,12 +199,31 @@ async function handleStartInterview() {
         updateQuestionCounter();
         elements.chatMessages.innerHTML = '';
         elements.answerInput.value = '';
+        elements.transcriptionPreview.textContent = '';
+        elements.transcriptionPreview.style.display = 'none';
+        
+        // Show/hide voice controls based on mode
+        if (state.currentMode === 'voice') {
+            elements.voiceControls.style.display = 'flex';
+            elements.answerInput.style.display = 'none';
+        } else {
+            elements.voiceControls.style.display = 'none';
+            elements.answerInput.style.display = 'block';
+        }
         
         // Add first question
         addMessage('interviewer', response.question, false);
         
+        // Speak question if in voice mode
+        if (state.currentMode === 'voice') {
+            await speakText(response.question);
+        }
+        
         showScreen('chat');
-        elements.answerInput.focus();
+        
+        if (state.currentMode === 'chat') {
+            elements.answerInput.focus();
+        }
         
     } catch (error) {
         showError('Failed to start interview: ' + error.message);
@@ -219,9 +259,19 @@ async function handleSendAnswer() {
             updateQuestionCounter();
             addMessage('interviewer', response.content, false);
             
+            // Speak question if in voice mode
+            if (state.currentMode === 'voice') {
+                await speakText(response.content);
+            }
+            
         } else if (response.type === 'followup') {
             // Follow-up question
             addMessage('interviewer', response.content, true);
+            
+            // Speak follow-up if in voice mode
+            if (state.currentMode === 'voice') {
+                await speakText(response.content);
+            }
             
         } else if (response.type === 'complete') {
             // Interview complete, get feedback
@@ -229,7 +279,13 @@ async function handleSendAnswer() {
             return;
         }
         
-        elements.answerInput.focus();
+        // Clear transcription preview
+        elements.transcriptionPreview.textContent = '';
+        elements.transcriptionPreview.style.display = 'none';
+        
+        if (state.currentMode === 'chat') {
+            elements.answerInput.focus();
+        }
         
     } catch (error) {
         showError('Failed to send answer: ' + error.message);
@@ -459,4 +515,168 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
     init();
+}
+
+
+// Voice Mode Functions
+
+async function checkVoiceAvailability() {
+    try {
+        const response = await apiRequest('/voice/status', 'GET');
+        state.voiceEnabled = response.voice_enabled;
+        
+        if (!state.voiceEnabled) {
+            elements.voiceModeBtn.disabled = true;
+            elements.voiceStatusMsg.textContent = '⚠️ Voice mode requires additional setup';
+            elements.voiceStatusMsg.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Failed to check voice availability:', error);
+        state.voiceEnabled = false;
+        elements.voiceModeBtn.disabled = true;
+    }
+}
+
+function handleModeChange(mode) {
+    if (mode === 'voice' && !state.voiceEnabled) {
+        showError('Voice mode is not available. Please install required dependencies.');
+        return;
+    }
+    
+    state.currentMode = mode;
+    
+    // Update button states
+    elements.chatModeBtn.classList.toggle('active', mode === 'chat');
+    elements.voiceModeBtn.classList.toggle('active', mode === 'voice');
+}
+
+async function handleRecordStart(e) {
+    e.preventDefault();
+    
+    if (state.isRecording || state.isProcessing) return;
+    
+    try {
+        // Request microphone access
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        state.audioChunks = [];
+        state.mediaRecorder = new MediaRecorder(stream);
+        
+        state.mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                state.audioChunks.push(event.data);
+            }
+        };
+        
+        state.mediaRecorder.onstop = async () => {
+            // Stop all tracks
+            stream.getTracks().forEach(track => track.stop());
+            
+            // Process the recording
+            await processRecording();
+        };
+        
+        state.mediaRecorder.start();
+        state.isRecording = true;
+        
+        // Update UI
+        elements.recordBtn.classList.add('recording');
+        elements.recordingStatus.textContent = '🔴 Recording... (Release to stop)';
+        elements.recordingStatus.style.display = 'block';
+        
+    } catch (error) {
+        console.error('Failed to start recording:', error);
+        showError('Failed to access microphone. Please check permissions.');
+    }
+}
+
+function handleRecordStop(e) {
+    e.preventDefault();
+    
+    if (!state.isRecording) return;
+    
+    state.isRecording = false;
+    
+    if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+        state.mediaRecorder.stop();
+    }
+    
+    // Update UI
+    elements.recordBtn.classList.remove('recording');
+    elements.recordingStatus.textContent = '⏳ Processing...';
+}
+
+async function processRecording() {
+    try {
+        // Create audio blob
+        const audioBlob = new Blob(state.audioChunks, { type: 'audio/wav' });
+        
+        // Convert to base64
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        
+        reader.onloadend = async () => {
+            const base64Audio = reader.result.split(',')[1];
+            
+            // Transcribe audio
+            try {
+                const response = await apiRequest('/voice/transcribe', 'POST', {
+                    audio_data: base64Audio,
+                    language: 'en'
+                });
+                
+                // Display transcription
+                elements.transcriptionPreview.textContent = `📝 "${response.transcription}"`;
+                elements.transcriptionPreview.style.display = 'block';
+                elements.answerInput.value = response.transcription;
+                
+                // Clear status
+                elements.recordingStatus.style.display = 'none';
+                
+                // Auto-focus send button
+                elements.sendBtn.focus();
+                
+            } catch (error) {
+                console.error('Transcription failed:', error);
+                showError('Failed to transcribe audio: ' + error.message);
+                elements.recordingStatus.style.display = 'none';
+            }
+        };
+        
+    } catch (error) {
+        console.error('Failed to process recording:', error);
+        showError('Failed to process recording: ' + error.message);
+        elements.recordingStatus.style.display = 'none';
+    }
+}
+
+async function speakText(text) {
+    if (state.currentMode !== 'voice') return;
+    
+    try {
+        const response = await apiRequest('/voice/synthesize', 'POST', {
+            text: text,
+            format: 'wav'
+        });
+        
+        // Decode base64 audio
+        const audioData = atob(response.audio_data);
+        const audioArray = new Uint8Array(audioData.length);
+        for (let i = 0; i < audioData.length; i++) {
+            audioArray[i] = audioData.charCodeAt(i);
+        }
+        
+        // Create audio blob and play
+        const audioBlob = new Blob([audioArray], { type: 'audio/wav' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        
+        audio.play().catch(error => {
+            console.error('Failed to play audio:', error);
+        });
+        
+    } catch (error) {
+        console.error('Speech synthesis failed:', error);
+        // Don't show error to user - just fall back to text
+    }
 }
