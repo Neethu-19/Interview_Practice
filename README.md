@@ -79,8 +79,6 @@ Interview_Practice/
 │   ├── index.html        # Main UI
 │   ├── styles.css        # Styling
 │   └── app.js            # Frontend logic
-└── .kiro/
-    └── specs/            # Design documents
 ```
 
 ## Architecture
