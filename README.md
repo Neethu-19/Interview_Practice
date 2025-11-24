@@ -716,15 +716,12 @@ Interview_Practice/
 │   ├── index.html                # Main UI
 │   ├── styles.css                # Styling
 │   └── app.js                    # Frontend logic
-├── .kiro/
-│   └── specs/
 │       └── interview-practice-partner/
 │           ├── requirements.md   # Feature requirements
 │           ├── design.md         # Architecture design
 │           └── tasks.md          # Implementation plan
 ├── README.md                     # This file
-├── FRONTEND_QUICKSTART.md        # Frontend testing guide
-└── VOICE_MODE_QUICKSTART.md      # Voice mode setup guide
+
 ```
 
 ## Configuration
