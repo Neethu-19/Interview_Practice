@@ -1,0 +1,152 @@
+{
+  "roles": {
+    "backend_engineer": {
+      "name": "backend_engineer",
+      "display_name": "Backend Engineer",
+      "description": "Technical interview for backend software engineering positions",
+      "questions": [
+        "Tell me about yourself and your experience with backend development.",
+        "Explain the difference between SQL and NoSQL databases. When would you use each?",
+        "How do you handle API versioning in a production system?",
+        "Describe your approach to debugging a performance issue in a web service.",
+        "What strategies do you use to ensure your code is maintainable and scalable?",
+        "Explain how you would design a rate limiting system for an API.",
+        "Tell me about a time you had to optimize a slow database query. What was your approach?",
+        "How do you handle authentication and authorization in your applications?",
+        "What is your experience with microservices architecture? What are the trade-offs?",
+        "Describe how you would implement caching in a high-traffic application."
+      ],
+      "evaluation_criteria": {
+        "technical_knowledge": {
+          "weight": 0.4,
+          "description": "Understanding of backend concepts, databases, APIs, system design",
+          "key_areas": [
+            "Database design and optimization",
+            "API design and best practices",
+            "System architecture and scalability",
+            "Security and authentication",
+            "Performance optimization"
+          ]
+        },
+        "communication": {
+          "weight": 0.3,
+          "description": "Ability to explain technical concepts clearly and concisely",
+          "key_areas": [
+            "Clear articulation of technical concepts",
+            "Use of appropriate terminology",
+            "Logical structure in explanations",
+            "Ability to simplify complex topics"
+          ]
+        },
+        "structure": {
+          "weight": 0.3,
+          "description": "Problem-solving approach and answer organization",
+          "key_areas": [
+            "Systematic problem-solving approach",
+            "Use of concrete examples",
+            "Consideration of trade-offs",
+            "Completeness of answers"
+          ]
+        }
+      }
+    },
+    "sales_associate": {
+      "name": "sales_associate",
+      "display_name": "Sales Associate",
+      "description": "Interview for sales and customer-facing positions",
+      "questions": [
+        "Tell me about yourself and your experience in sales.",
+        "How do you approach building rapport with a new customer?",
+        "Describe a time when you successfully closed a difficult sale. What was your strategy?",
+        "How do you handle objections from potential customers?",
+        "What techniques do you use to identify customer needs?",
+        "Tell me about a time you failed to close a sale. What did you learn?",
+        "How do you stay motivated when facing rejection?",
+        "Describe your approach to following up with leads.",
+        "How do you prioritize your sales pipeline?",
+        "What metrics do you track to measure your sales performance?"
+      ],
+      "evaluation_criteria": {
+        "communication": {
+          "weight": 0.4,
+          "description": "Interpersonal skills, persuasiveness, and clarity",
+          "key_areas": [
+            "Active listening and empathy",
+            "Persuasive communication",
+            "Confidence and enthusiasm",
+            "Adaptability in conversation"
+          ]
+        },
+        "technical_knowledge": {
+          "weight": 0.3,
+          "description": "Understanding of sales processes, techniques, and metrics",
+          "key_areas": [
+            "Sales methodology knowledge",
+            "Understanding of sales metrics",
+            "Product knowledge approach",
+            "CRM and tools familiarity"
+          ]
+        },
+        "structure": {
+          "weight": 0.3,
+          "description": "Organization of thoughts and use of examples",
+          "key_areas": [
+            "Use of STAR method (Situation, Task, Action, Result)",
+            "Concrete examples from experience",
+            "Goal-oriented thinking",
+            "Strategic approach to sales"
+          ]
+        }
+      }
+    },
+    "retail_associate": {
+      "name": "retail_associate",
+      "display_name": "Retail Associate",
+      "description": "Interview for retail and customer service positions",
+      "questions": [
+        "Tell me about yourself and why you're interested in retail.",
+        "How would you handle an upset customer who wants to return an item without a receipt?",
+        "Describe a time when you provided excellent customer service.",
+        "How do you handle multiple customers waiting for assistance at the same time?",
+        "What would you do if you noticed a coworker not following store policies?",
+        "How do you stay engaged during slow periods in the store?",
+        "Tell me about a time you had to learn about a new product quickly.",
+        "How would you handle a situation where a customer asks for a product you don't have in stock?",
+        "Describe your approach to maintaining a clean and organized store environment.",
+        "How do you balance helping customers with completing other store tasks?"
+      ],
+      "evaluation_criteria": {
+        "communication": {
+          "weight": 0.4,
+          "description": "Customer service skills and interpersonal abilities",
+          "key_areas": [
+            "Friendly and approachable demeanor",
+            "Clear and helpful communication",
+            "Patience and empathy",
+            "Conflict resolution skills"
+          ]
+        },
+        "structure": {
+          "weight": 0.3,
+          "description": "Problem-solving approach and practical thinking",
+          "key_areas": [
+            "Practical solutions to customer issues",
+            "Prioritization skills",
+            "Use of specific examples",
+            "Step-by-step problem solving"
+          ]
+        },
+        "technical_knowledge": {
+          "weight": 0.3,
+          "description": "Understanding of retail operations and policies",
+          "key_areas": [
+            "Knowledge of retail best practices",
+            "Understanding of store policies",
+            "Product knowledge approach",
+            "Point-of-sale system familiarity"
+          ]
+        }
+      }
+    }
+  }
+}
